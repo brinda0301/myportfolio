@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Race Strategy Pipeline // Experience</title>
+  <meta name="description" content="Career pipeline for Brinda Ramesh Bhanderi, drawn as an F1 circuit map with checkpoints for each role." />
+
+  <!-- ================================================================
+       FONTS: Space Grotesk + JetBrains Mono
+       ================================================================ -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- ================================================================
+       TAILWIND (CDN) + shared design tokens
+       ================================================================ -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            carbon: '#0A0C10',
+            panel:  '#1F242E',
+            line:   '#2A313D',
+            mute:   '#8B93A7',
+            f1red:  '#FF1801',
+            tele:   '#00E5FF',
+            sector: '#D500F9',
+            go:     '#00FF85'
+          },
+          fontFamily: {
+            sans: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* ---------- Base background grid ---------- */
+    body {
+      background-color: #0A0C10;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.15; } }
+    .blink { animation: blink 1.1s steps(1) infinite; }
+    @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(0,255,133,.6); } 100% { box-shadow: 0 0 0 8px rgba(0,255,133,0); } }
+    .live-dot { animation: pulse-ring 1.6s ease-out infinite; }
+
+    .kerb { background: repeating-linear-gradient(90deg, #FF1801 0 14px, #E8E8E8 14px 28px); }
+
+    /* ==============================================================
+       CIRCUIT MAP (SVG)
+       ============================================================== */
+    .cp-node { cursor: pointer; outline: none; }
+    .cp-node .ring { transition: r .2s, stroke-width .2s; }
+    .cp-node:hover .ring, .cp-node:focus-visible .ring, .cp-node.is-active .ring { r: 15; stroke-width: 3; }
+    @keyframes cp-flash { from { opacity: .9; r: 10; } to { opacity: 0; r: 30; } }
+    .cp-flash { animation: cp-flash .9s ease-out; }
+
+    /* ==============================================================
+       TRACK SEGMENTS between checkpoint cards
+       Default (mobile): every segment is vertical.
+       lg+: segments with .seg-h run horizontally.
+       ============================================================== */
+    .seg { position: relative; min-height: 76px; }
+    .seg .road {
+      position: absolute; top: 0; bottom: 0; left: 50%; width: 30px; margin-left: -15px;
+      background: #161A21;
+    }
+    /* Kerbs on both edges of the road */
+    .seg .road::before, .seg .road::after {
+      content: ''; position: absolute; top: 0; bottom: 0; width: 4px;
+      background: repeating-linear-gradient(180deg, #FF1801 0 10px, #E8E8E8 10px 20px);
+    }
+    .seg .road::before { left: -4px; }
+    .seg .road::after  { right: -4px; }
+    /* Animated center line shows direction of travel */
+    .seg .lane {
+      position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px;
+      background: repeating-linear-gradient(180deg, #00E5FF 0 8px, transparent 8px 20px);
+      background-size: 2px 20px;
+      animation: flow-down 0.9s linear infinite; opacity: .8;
+    }
+    @keyframes flow-down  { to { background-position: 0 20px; } }
+    @keyframes flow-right { to { background-position: 20px 0; } }
+    @keyframes flow-left  { to { background-position: -20px 0; } }
+
+    /* Segment label (year / pit lane tag) sits on top of the road */
+    .seg .tag {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      white-space: nowrap; z-index: 1;
+    }
+
+    @media (min-width: 1024px) {
+      .seg-h { min-height: 0; }
+      .seg-h .road {
+        top: 50%; bottom: auto; left: 0; right: 0; width: auto; height: 30px; margin: -15px 0 0 0;
+      }
+      .seg-h .road::before, .seg-h .road::after {
+        top: auto; bottom: auto; left: 0; right: 0; width: auto; height: 4px;
+        background: repeating-linear-gradient(90deg, #FF1801 0 10px, #E8E8E8 10px 20px);
+      }
+      .seg-h .road::before { top: -4px; }
+      .seg-h .road::after  { bottom: -4px; }
+      .seg-h .lane {
+        top: 50%; bottom: auto; left: 0; right: 0; width: auto; height: 2px; margin: -1px 0 0 0;
+        background: repeating-linear-gradient(90deg, #00E5FF 0 8px, transparent 8px 20px);
+        background-size: 20px 2px;
+        animation-name: flow-right;
+      }
+      .seg-h.reverse .lane { animation-name: flow-left; }
+      .seg-h .tag { top: 50%; transform: translate(-50%, calc(-100% - 22px)); }
+    }
+
+    /* Highlight ring for a card selected from the circuit map */
+    .cp-card { transition: border-color .3s, box-shadow .3s; }
+    .cp-card.is-focus { border-color: var(--cp); box-shadow: 0 0 0 1px var(--cp), 0 0 50px -15px var(--cp); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen font-sans text-slate-100 antialiased selection:bg-f1red selection:text-white">
+
+  <!-- ==================================================================
+       PIT WALL NAVIGATION BAR
+       ================================================================== -->
+  <header class="sticky top-0 z-50 border-b border-line bg-carbon/90 backdrop-blur">
+    <div class="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4">
+      <a href="index.html" class="flex shrink-0 items-center gap-2 font-mono text-sm font-bold tracking-widest">
+        <span class="grid h-7 w-7 place-items-center rounded-sm bg-f1red text-xs text-white">01</span>
+        <span class="hidden sm:inline">BRB<span class="text-f1red">//</span>PW</span>
+      </a>
+      <nav class="flex min-w-0 items-center gap-1 font-mono text-[11px] tracking-wider sm:text-xs" aria-label="Primary">
+        <a href="index.html" class="whitespace-nowrap rounded-sm border border-transparent px-2 py-1.5 text-mute transition hover:border-line hover:text-white">
+          <span class="hidden sm:inline">[ </span><span class="hidden lg:inline text-f1red">SYS_STATUS // </span>HOME<span class="hidden sm:inline"> ]</span>
+        </a>
+        <a href="projects.html" class="whitespace-nowrap rounded-sm border border-transparent px-2 py-1.5 text-mute transition hover:border-line hover:text-white">
+          <span class="hidden sm:inline">[ </span><span class="hidden lg:inline text-tele">TELEMETRY // </span>PROJECTS<span class="hidden sm:inline"> ]</span>
+        </a>
+        <a href="experience.html" aria-current="page" class="whitespace-nowrap rounded-sm border border-sector/60 bg-sector/10 px-2 py-1.5 text-white">
+          <span class="hidden sm:inline">[ </span><span class="hidden lg:inline text-sector">RACE_ENGINE // </span>PIPELINE<span class="hidden sm:inline"> ]</span>
+        </a>
+      </nav>
+      <div class="hidden shrink-0 items-center gap-3 font-mono text-xs text-mute md:flex">
+        <span class="flex items-center gap-1.5"><span class="live-dot h-2 w-2 rounded-full bg-go"></span>LINK OK</span>
+        <span id="utcClock" class="tabular-nums text-slate-200">--:--:--</span>
+      </div>
+    </div>
+    <div class="grid h-[3px] grid-cols-3"><span class="bg-f1red"></span><span class="bg-tele"></span><span class="bg-sector"></span></div>
+  </header>
+
+  <main class="mx-auto max-w-7xl px-4 pb-16">
+
+    <!-- ==================================================================
+         PAGE HEADER + STRATEGY SUMMARY
+         ================================================================== -->
+    <section class="pb-8 pt-10 lg:pt-14">
+      <p class="font-mono text-[11px] tracking-[0.3em] text-sector">RACE_ENGINE // PIPELINE</p>
+      <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-5xl">The Race Strategy Pipeline</h1>
+      <p class="mt-4 max-w-2xl text-slate-400">
+        One lap, four checkpoints. The car starts in 2020 writing SQL and Django APIs, and it is now leading at a
+        New York data science role. Click any checkpoint on the circuit to pull its telemetry.
+      </p>
+
+      <!-- Strategy summary strip -->
+      <dl class="mt-8 grid grid-cols-2 gap-px border border-line bg-line font-mono sm:grid-cols-4">
+        <div class="bg-panel p-4"><dt class="text-[10px] tracking-widest text-mute">TIME ON TRACK</dt><dd class="mt-1 text-xl">6+ YRS</dd></div>
+        <div class="bg-panel p-4"><dt class="text-[10px] tracking-widest text-mute">TEAMS</dt><dd class="mt-1 text-xl">5</dd></div>
+        <div class="bg-panel p-4"><dt class="text-[10px] tracking-widest text-mute">PIT STOP</dt><dd class="mt-1 text-xl">M.S. ECE</dd></div>
+        <div class="bg-panel p-4"><dt class="text-[10px] tracking-widest text-mute">NEXT STINT</dt><dd class="mt-1 text-xl text-go">ANY US CITY</dd></div>
+      </dl>
+    </section>
+
+    <!-- ==================================================================
+         CIRCUIT MAP + LIVE TIMING PANEL
+         The SVG track is drawn once. JS places checkpoints along the path
+         with getPointAtLength(), then drives a car dot around the lap.
+         ================================================================== -->
+    <section class="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+      <!-- ---------- Circuit map ---------- -->
+      <div class="relative min-w-0 border border-line bg-panel/60">
+        <div class="flex items-center justify-between border-b border-line px-4 py-2.5 font-mono text-[11px] tracking-widest">
+          <span class="text-tele">CIRCUIT MAP // CAREER GP</span>
+          <span id="lapCounter" class="tabular-nums text-mute">LAP 01</span>
+        </div>
+
+        <svg id="circuit" viewBox="0 0 940 400" class="block h-auto w-full" role="img" aria-labelledby="circuitTitle">
+          <title id="circuitTitle">Career circuit with four checkpoints, from 2020 to present</title>
+          <defs>
+            <!-- Glow filter for the car and active checkpoint -->
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4" result="b" />
+              <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+            <!-- Checkered flag pattern for the start/finish line -->
+            <pattern id="checker" width="8" height="8" patternUnits="userSpaceOnUse">
+              <rect width="8" height="8" fill="#E8E8E8" />
+              <rect width="4" height="4" fill="#0A0C10" />
+              <rect x="4" y="4" width="4" height="4" fill="#0A0C10" />
+            </pattern>
+          </defs>
+
+          <!-- The circuit is one path, reused by several layers via <use> -->
+          <path id="trackPath" fill="none"
+            d="M 120 330 L 620 330 C 700 330 720 300 760 260 L 860 160 C 890 130 880 80 830 70
+               L 560 70 C 520 70 500 90 480 120 L 440 180 C 420 210 390 220 360 200 L 250 110
+               C 220 85 170 80 140 100 L 90 140 C 60 165 55 200 60 240 L 70 290 C 75 315 95 330 120 330 Z" />
+
+          <!-- Layer 1: kerbs (white base + red dashes) -->
+          <use href="#trackPath" stroke="#E8E8E8" stroke-width="38" stroke-linejoin="round" opacity=".55" />
+          <use href="#trackPath" stroke="#FF1801" stroke-width="38" stroke-linejoin="round" stroke-dasharray="12 12" opacity=".8" />
+          <!-- Layer 2: asphalt -->
+          <use href="#trackPath" stroke="#161A21" stroke-width="30" stroke-linejoin="round" />
+          <!-- Layer 3: dashed racing line -->
+          <use href="#trackPath" stroke="#3A4252" stroke-width="1.5" stroke-dasharray="6 9" />
+          <!-- Layer 4: progress trail (dash length set by JS) -->
+          <path id="trail" fill="none" stroke="#00E5FF" stroke-width="3" stroke-linecap="round" opacity=".85"
+            d="M 120 330 L 620 330 C 700 330 720 300 760 260 L 860 160 C 890 130 880 80 830 70
+               L 560 70 C 520 70 500 90 480 120 L 440 180 C 420 210 390 220 360 200 L 250 110
+               C 220 85 170 80 140 100 L 90 140 C 60 165 55 200 60 240 L 70 290 C 75 315 95 330 120 330 Z" />
+
+          <!-- Start / finish line across the main straight -->
+          <rect x="116" y="313" width="8" height="34" fill="url(#checker)" />
+          <text x="120" y="372" text-anchor="middle" fill="#8B93A7" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="2">START 2020</text>
+
+          <!-- Direction arrow on the main straight -->
+          <text x="380" y="372" text-anchor="middle" fill="#3A4252" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="3">DIRECTION &#9654;&#9654;</text>
+
+          <!-- Checkpoint nodes are injected here by JS -->
+          <g id="cpLayer"></g>
+
+          <!-- The car -->
+          <g id="car" filter="url(#glow)">
+            <circle r="8" fill="#FF1801" />
+            <circle r="3" fill="#fff" />
+          </g>
+        </svg>
+
+        <!-- Checkpoint buttons: accessible alternative to the SVG nodes -->
+        <div class="flex flex-wrap gap-1.5 border-t border-line p-3 font-mono text-[11px]" id="cpButtons">
+          <button type="button" data-auto class="rounded-sm border border-tele bg-tele/10 px-3 py-1.5 text-white">AUTO</button>
+        </div>
+      </div>
+
+      <!-- ---------- Live timing panel (content swapped by JS) ---------- -->
+      <aside class="flex min-w-0 flex-col border border-line bg-black/40 font-mono" aria-live="polite">
+        <div class="flex items-center justify-between border-b border-line px-4 py-2.5 text-[11px] tracking-widest">
+          <span class="text-mute">LIVE TIMING</span>
+          <span id="ltMode" class="flex items-center gap-1.5 text-go"><span class="blink h-1.5 w-1.5 rounded-full bg-go"></span>AUTO</span>
+        </div>
+        <div class="flex-1 p-5">
+          <p id="ltId" class="text-[11px] tracking-widest" style="color:#FF1801">CP1 // CURRENT</p>
+          <h2 id="ltRole" class="mt-2 font-sans text-2xl font-bold">Data Scientist</h2>
+          <p id="ltCompany" class="mt-1 font-sans text-slate-300">Hast Impex NY INC</p>
+          <p id="ltMeta" class="mt-1 text-xs text-mute">New York, NY // Mar 2026 to present</p>
+
+          <div class="mt-6 border-t border-line pt-5">
+            <p class="text-[10px] tracking-widest text-mute">HEADLINE DELTA</p>
+            <p id="ltMetric" class="mt-1 text-5xl font-bold" style="color:#FF1801">+10&ndash;15%</p>
+            <p id="ltMetricLabel" class="mt-2 font-sans text-sm text-slate-300">Early prediction accuracy</p>
+          </div>
+        </div>
+        <button type="button" id="ltJump" class="border-t border-line px-5 py-3 text-left text-xs tracking-widest text-tele transition hover:bg-tele/10">
+          OPEN FULL SECTOR DATA &darr;
+        </button>
+      </aside>
+    </section>
+
+    <div class="kerb my-12 h-1.5 opacity-80"></div>
+
+    <!-- ==================================================================
+         PIPELINE GRID
+         Cards are checkpoints; .seg blocks are the track between them.
+         lg layout (3 columns):
+           row 1:  CP1  ──▶  CP2
+           row 2:              │
+           row 3:  CP4  ◀──  CP3
+         Mobile: one column, all segments vertical.
+         ================================================================== -->
+    <section aria-labelledby="pipelineTitle">
+      <div class="mb-8">
+        <p class="font-mono text-[11px] tracking-[0.3em] text-f1red">SECTOR DATA</p>
+        <h2 id="pipelineTitle" class="mt-2 text-2xl font-bold sm:text-3xl">Checkpoint telemetry</h2>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-[1fr_96px_1fr] lg:grid-rows-[auto_76px_auto]">
+
+        <!-- ---------- CP1 // HAST IMPEX (current) ---------- -->
+        <article id="cp-1" class="cp-card border border-line bg-panel/70 lg:col-start-1 lg:row-start-1" style="--cp:#FF1801">
+          <header class="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3 font-mono text-[11px] tracking-widest">
+            <span class="font-bold text-f1red">CP1 // CURRENT</span>
+            <span class="flex items-center gap-1.5 text-go"><span class="live-dot h-2 w-2 rounded-full bg-go"></span>LIVE // LEADING</span>
+          </header>
+          <div class="p-5">
+            <p class="font-mono text-[11px] tracking-widest text-mute">MAR 2026 // PRESENT &middot; NEW YORK, NY</p>
+            <h3 class="mt-2 text-xl font-bold">Data Scientist</h3>
+            <p class="text-slate-300">Hast Impex NY INC</p>
+
+            <!-- Headline metric + secondary readouts -->
+            <div class="mt-5 grid grid-cols-[1fr_auto] items-end gap-4 border-y border-line py-4">
+              <div>
+                <p class="font-mono text-[10px] tracking-widest text-mute">EARLY PREDICTION ACCURACY</p>
+                <p class="font-mono text-4xl font-bold text-f1red">+10&ndash;15%</p>
+              </div>
+              <div class="text-right font-mono text-xs">
+                <p class="text-mute">ETL TIME</p><p class="text-go">-25&ndash;30%</p>
+              </div>
+            </div>
+
+            <ul class="mt-4 space-y-2 text-sm text-slate-300">
+              <li class="flex gap-2"><span class="text-f1red">&#9656;</span>Pricing and demand forecasting models over hundreds of thousands of transactional records.</li>
+              <li class="flex gap-2"><span class="text-f1red">&#9656;</span>Python and SQL ETL pipelines merging multi-source data into clean modeling sets.</li>
+              <li class="flex gap-2"><span class="text-f1red">&#9656;</span>Streamlit dashboards for near real time operational metrics, cutting manual reporting.</li>
+              <li class="flex gap-2"><span class="text-f1red">&#9656;</span>Sales and inventory analysis to flag high-turnover items and slow-moving stock.</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- Track: CP1 → CP2 -->
+        <div class="seg seg-h lg:col-start-2 lg:row-start-1" aria-hidden="true">
+          <div class="road"><div class="lane"></div></div>
+          <span class="tag bg-carbon px-1.5 py-0.5 font-mono text-[10px] tracking-widest text-mute">2026</span>
+        </div>
+
+        <!-- ---------- CP2 // NEURONEXUS ---------- -->
+        <article id="cp-2" class="cp-card border border-line bg-panel/70 lg:col-start-3 lg:row-start-1" style="--cp:#00FF85">
+          <header class="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3 font-mono text-[11px] tracking-widest">
+            <span class="font-bold text-go">CP2</span>
+            <span class="text-mute">SECTOR CLEARED</span>
+          </header>
+          <div class="p-5">
+            <p class="font-mono text-[11px] tracking-widest text-mute">JUL 2025 // MAR 2026 &middot; REMOTE, NJ</p>
+            <h3 class="mt-2 text-xl font-bold">Data Scientist</h3>
+            <p class="text-slate-300">Neuronexus Technocrafts</p>
+
+            <div class="mt-5 grid grid-cols-[1fr_auto] items-end gap-4 border-y border-line py-4">
+              <div>
+                <p class="font-mono text-[10px] tracking-widest text-mute">ALERT NOISE</p>
+                <p class="font-mono text-4xl font-bold text-go">-35%</p>
+              </div>
+              <div class="text-right font-mono text-xs">
+                <p class="text-mute">DATA LATENCY</p><p class="text-go">-50%</p>
+              </div>
+            </div>
+
+            <ul class="mt-4 space-y-2 text-sm text-slate-300">
+              <li class="flex gap-2"><span class="text-go">&#9656;</span>Production forecasting models in TensorFlow and scikit-learn.</li>
+              <li class="flex gap-2"><span class="text-go">&#9656;</span>Python and SQL ETL pipelines that feed model training and reporting.</li>
+              <li class="flex gap-2"><span class="text-go">&#9656;</span>Monitoring dashboards and automated reports for engineering and operations teams.</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- Track: CP2 ↓ CP3 (vertical on every screen size) -->
+        <div class="seg lg:col-start-3 lg:row-start-2" aria-hidden="true">
+          <div class="road"><div class="lane"></div></div>
+          <span class="tag bg-carbon px-1.5 py-0.5 font-mono text-[10px] tracking-widest text-mute">2025</span>
+        </div>
+
+        <!-- ---------- CP3 // FLOW GLOBAL ---------- -->
+        <article id="cp-3" class="cp-card border border-line bg-panel/70 lg:col-start-3 lg:row-start-3" style="--cp:#D500F9">
+          <header class="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3 font-mono text-[11px] tracking-widest">
+            <span class="font-bold text-sector">CP3</span>
+            <span class="text-sector">PURPLE SECTOR</span>
+          </header>
+          <div class="p-5">
+            <p class="font-mono text-[11px] tracking-widest text-mute">AUG 2024 // MAR 2025 &middot; REMOTE, DE</p>
+            <h3 class="mt-2 text-xl font-bold">Data Scientist Intern</h3>
+            <p class="text-slate-300">Flow Global Software Technologies</p>
+
+            <div class="mt-5 grid grid-cols-[1fr_auto] items-end gap-4 border-y border-line py-4">
+              <div>
+                <p class="font-mono text-[10px] tracking-widest text-mute">BERT NER RECORD PRECISION</p>
+                <p class="font-mono text-4xl font-bold text-sector">+90%</p>
+              </div>
+              <div class="text-right font-mono text-xs">
+                <p class="text-mute">LEAD VOLUME</p><p class="text-go">+60%</p>
+              </div>
+            </div>
+
+            <!-- Secondary deltas as a mini timing table -->
+            <dl class="mt-4 grid grid-cols-3 gap-px border border-line bg-line font-mono text-xs">
+              <div class="bg-panel p-2"><dt class="text-[9px] tracking-widest text-mute">THROUGHPUT</dt><dd class="text-go">+40%</dd></div>
+              <div class="bg-panel p-2"><dt class="text-[9px] tracking-widest text-mute">CYCLE TIME</dt><dd class="text-go">-40%</dd></div>
+              <div class="bg-panel p-2"><dt class="text-[9px] tracking-widest text-mute">TICKETS</dt><dd class="text-go">-20%</dd></div>
+            </dl>
+
+            <ul class="mt-4 space-y-2 text-sm text-slate-300">
+              <li class="flex gap-2"><span class="text-sector">&#9656;</span>BERT-based NER models validating CRM fields across large B2B datasets.</li>
+              <li class="flex gap-2"><span class="text-sector">&#9656;</span>LLM modules wired into pipelines with LangChain.</li>
+              <li class="flex gap-2"><span class="text-sector">&#9656;</span>Data acquisition pipelines rebuilt with Selenium and Python.</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- Track: CP3 → CP4 via the pit lane (flows left on lg) -->
+        <div class="seg seg-h reverse lg:col-start-2 lg:row-start-3" aria-hidden="true">
+          <div class="road"><div class="lane"></div></div>
+          <span class="tag border border-sector/50 bg-carbon px-1.5 py-0.5 text-center font-mono text-[10px] leading-tight tracking-widest text-sector">PIT LANE<br /><span class="text-mute">M.S. 22&ndash;24</span></span>
+        </div>
+
+        <!-- ---------- CP4 // APPWORLD + JIL IMPEX ---------- -->
+        <article id="cp-4" class="cp-card border border-line bg-panel/70 lg:col-start-1 lg:row-start-3" style="--cp:#00E5FF">
+          <header class="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3 font-mono text-[11px] tracking-widest">
+            <span class="font-bold text-tele">CP4 // FORMATION</span>
+            <span class="text-mute">2 STINTS</span>
+          </header>
+          <div class="divide-y divide-line">
+            <!-- Stint A: AppWorld -->
+            <div class="p-5">
+              <p class="font-mono text-[11px] tracking-widest text-mute">JUN 2021 // JUN 2022 &middot; SURAT, INDIA</p>
+              <h3 class="mt-2 text-xl font-bold">Software Engineer</h3>
+              <p class="text-slate-300">AppWorld Infotech</p>
+              <dl class="mt-4 grid grid-cols-2 gap-px border border-line bg-line font-mono text-xs sm:grid-cols-4">
+                <div class="bg-panel p-2"><dt class="text-[9px] tracking-widest text-mute">REQ / DAY</dt><dd class="text-tele">10,000+</dd></div>
+                <div class="bg-panel p-2"><dt class="text-[9px] tracking-widest text-mute">UPTIME</dt><dd class="text-tele">99.5%</dd></div>
+                <div class="bg-panel p-2"><dt class="text-[9px] tracking-widest text-mute">REPORT TIME</dt><dd class="text-go">-25&ndash;30%</dd></div>
+                <div class="bg-panel p-2"><dt class="text-[9px] tracking-widest text-mute">DEPLOY TIME</dt><dd class="text-go">-45%</dd></div>
+              </dl>
+              <p class="mt-3 text-sm text-slate-300">Django REST APIs, MySQL schema and index tuning, automated tests and CI/CD.</p>
+            </div>
+            <!-- Stint B: Jil Impex -->
+            <div class="p-5">
+              <p class="font-mono text-[11px] tracking-widest text-mute">JAN 2020 // MAY 2021 &middot; MUMBAI, INDIA</p>
+              <h3 class="mt-2 text-xl font-bold">Junior Software Engineer</h3>
+              <p class="text-slate-300">Jil Impex</p>
+              <dl class="mt-4 grid grid-cols-2 gap-px border border-line bg-line font-mono text-xs">
+                <div class="bg-panel p-2"><dt class="text-[9px] tracking-widest text-mute">THROUGHPUT</dt><dd class="text-go">+80%</dd></div>
+                <div class="bg-panel p-2"><dt class="text-[9px] tracking-widest text-mute">SQL EXEC TIME</dt><dd class="text-go">-40%</dd></div>
+              </dl>
+              <p class="mt-3 text-sm text-slate-300">Python automation for order reporting, SQL stored procedure refactors and table partitioning.</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         PIT LANE: education, the stop between CP4 and CP3
+         ================================================================== -->
+    <section class="mt-14 border border-sector/40 bg-sector/5 p-5 sm:p-7">
+      <p class="font-mono text-[11px] tracking-[0.3em] text-sector">PIT LANE // 2022 TO 2024</p>
+      <div class="mt-4 grid gap-6 md:grid-cols-2">
+        <div>
+          <h3 class="text-lg font-semibold">M.S., Electrical and Computer Engineering</h3>
+          <p class="text-slate-400">University at Albany, SUNY // May 2024</p>
+          <p class="mt-2 text-sm text-slate-300">Research builds from this window: Multi Expert Fusion (2024) and the Breast Cancer CNN (2023).</p>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold">B.Tech., Electronics and Communications Engineering</h3>
+          <p class="text-slate-400">SNDT Women's University // Jun 2022</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================================================================
+       FOOTER
+       ================================================================== -->
+  <footer class="border-t border-line bg-black/40">
+    <div class="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 md:flex-row md:items-center md:justify-between">
+      <div>
+        <p class="font-mono text-[11px] tracking-[0.3em] text-f1red">TEAM RADIO // BOX BOX</p>
+        <p class="mt-2 text-lg font-semibold">Open a channel. I reply within a day.</p>
+      </div>
+      <ul class="flex flex-wrap gap-2 font-mono text-xs">
+        <li><a class="block border border-line px-3 py-2 text-slate-300 transition hover:border-f1red hover:text-white" href="mailto:bhanderibrinda3@gmail.com">EMAIL</a></li>
+        <li><a class="block border border-line px-3 py-2 text-slate-300 transition hover:border-tele hover:text-white" href="https://www.linkedin.com/in/brindabhanderi" target="_blank" rel="noopener">LINKEDIN &nearr;</a></li>
+        <li><a class="block border border-line px-3 py-2 text-slate-300 transition hover:border-sector hover:text-white" href="https://github.com/brinda0301" target="_blank" rel="noopener">GITHUB &nearr;</a></li>
+      </ul>
+    </div>
+    <p class="border-t border-line py-4 text-center font-mono text-[10px] tracking-widest text-mute">&copy; <span id="year">2026</span> BRINDA RAMESH BHANDERI // HTML + TAILWIND + VANILLA JS</p>
+  </footer>
+
+  <!-- ==================================================================
+       SCRIPTS
+       ================================================================== -->
+  <script>
+    (() => {
+      'use strict';
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const SVG_NS = 'http://www.w3.org/2000/svg';
+
+      /* ---------- 1. UTC clock + footer year ---------- */
+      const clockEl = document.getElementById('utcClock');
+      const tickClock = () => { clockEl.textContent = 'UTC ' + new Date().toISOString().slice(11, 19); };
+      tickClock();
+      setInterval(tickClock, 1000);
+      document.getElementById('year').textContent = new Date().getFullYear();
+
+      /* ---------- 2. Checkpoint data ----------
+         frac  = position around the lap (0 = start line, 1 = full lap), in career order.
+         label = offset of the SVG label from the node, tuned to keep it off the asphalt. */
+      const CHECKPOINTS = [
+        { id: 4, frac: 0.12, color: '#00E5FF', tag: 'CP4 // FORMATION', year: '2020',
+          role: 'Software Engineer', company: 'AppWorld Infotech + Jil Impex',
+          meta: 'Surat and Mumbai, India // Jan 2020 to Jun 2022',
+          metric: '99.5%', metricLabel: 'API uptime at 10,000+ requests per day',
+          label: { dx: 0, dy: -30 } },
+        { id: 3, frac: 0.36, color: '#D500F9', tag: 'CP3 // PURPLE SECTOR', year: '2024',
+          role: 'Data Scientist Intern', company: 'Flow Global Software Technologies',
+          meta: 'Remote, DE // Aug 2024 to Mar 2025',
+          metric: '+90%', metricLabel: 'CRM record precision with BERT-based NER',
+          label: { dx: 50, dy: 8 } },
+        { id: 2, frac: 0.60, color: '#00FF85', tag: 'CP2 // SECTOR CLEARED', year: '2025',
+          role: 'Data Scientist', company: 'Neuronexus Technocrafts',
+          meta: 'Remote, NJ // Jul 2025 to Mar 2026',
+          metric: '-35%', metricLabel: 'Alert noise from production forecasting models',
+          label: { dx: 0, dy: 44 } },
+        { id: 1, frac: 0.86, color: '#FF1801', tag: 'CP1 // CURRENT', year: 'NOW',
+          role: 'Data Scientist', company: 'Hast Impex NY INC',
+          meta: 'New York, NY // Mar 2026 to present',
+          metric: '+10–15%', metricLabel: 'Early prediction accuracy',
+          label: { dx: 52, dy: 4 } }
+      ];
+
+      /* ---------- 3. Geometry helpers ---------- */
+      const track = document.getElementById('trackPath');
+      const trail = document.getElementById('trail');
+      const car = document.getElementById('car');
+      const cpLayer = document.getElementById('cpLayer');
+      const LEN = track.getTotalLength();
+      const pointAt = (frac) => track.getPointAtLength(((frac % 1) + 1) % 1 * LEN);
+
+      /* ---------- 4. Build checkpoint nodes on the SVG ---------- */
+      const nodes = {};
+      CHECKPOINTS.forEach((cp) => {
+        const p = pointAt(cp.frac);
+        const g = document.createElementNS(SVG_NS, 'g');
+        g.setAttribute('class', 'cp-node');
+        g.setAttribute('tabindex', '0');
+        g.setAttribute('role', 'button');
+        g.setAttribute('aria-label', `Checkpoint ${cp.id}: ${cp.role} at ${cp.company}`);
+        g.innerHTML = `
+          <circle class="flash" cx="${p.x}" cy="${p.y}" r="10" fill="none" stroke="${cp.color}" stroke-width="2" opacity="0"></circle>
+          <circle class="ring" cx="${p.x}" cy="${p.y}" r="11" fill="#0A0C10" stroke="${cp.color}" stroke-width="2"></circle>
+          <text x="${p.x}" y="${p.y + 4}" text-anchor="middle" fill="${cp.color}" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">${cp.id}</text>
+          <g transform="translate(${p.x + cp.label.dx}, ${p.y + cp.label.dy})">
+            <rect x="-34" y="-12" width="68" height="18" rx="2" fill="#0A0C10" stroke="${cp.color}" stroke-opacity=".5"></rect>
+            <text y="1" text-anchor="middle" fill="#E8E8E8" font-family="JetBrains Mono, monospace" font-size="10" letter-spacing="1">CP${cp.id} ${cp.year}</text>
+          </g>`;
+        g.addEventListener('click', () => select(cp.id, true));
+        g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(cp.id, true); } });
+        cpLayer.appendChild(g);
+        nodes[cp.id] = g;
+      });
+
+      /* ---------- 5. Checkpoint buttons under the map ---------- */
+      const btnRow = document.getElementById('cpButtons');
+      const autoBtn = btnRow.querySelector('[data-auto]');
+      const cpBtns = {};
+      [...CHECKPOINTS].reverse().forEach((cp) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'rounded-sm border border-line px-3 py-1.5 text-mute hover:text-white';
+        b.innerHTML = `<span style="color:${cp.color}">&#9679;</span> CP${cp.id}`;
+        b.addEventListener('click', () => select(cp.id, true));
+        btnRow.appendChild(b);
+        cpBtns[cp.id] = b;
+      });
+
+      /* ---------- 6. Live timing panel ---------- */
+      const lt = {
+        id: document.getElementById('ltId'),
+        role: document.getElementById('ltRole'),
+        company: document.getElementById('ltCompany'),
+        meta: document.getElementById('ltMeta'),
+        metric: document.getElementById('ltMetric'),
+        metricLabel: document.getElementById('ltMetricLabel'),
+        mode: document.getElementById('ltMode'),
+        jump: document.getElementById('ltJump')
+      };
+      let activeId = 1;
+      let pinned = false;  // true when the user picked a checkpoint (stops auto-follow)
+
+      function select(id, byUser) {
+        const cp = CHECKPOINTS.find((c) => c.id === id);
+        activeId = id;
+        if (byUser) setPinned(true);
+
+        lt.id.textContent = cp.tag;
+        lt.id.style.color = cp.color;
+        lt.role.textContent = cp.role;
+        lt.company.textContent = cp.company;
+        lt.meta.textContent = cp.meta;
+        lt.metric.textContent = cp.metric;
+        lt.metric.style.color = cp.color;
+        lt.metricLabel.textContent = cp.metricLabel;
+
+        Object.entries(nodes).forEach(([k, n]) => n.classList.toggle('is-active', +k === id));
+        Object.entries(cpBtns).forEach(([k, b]) => {
+          const on = +k === id && pinned;
+          b.classList.toggle('border-line', !on);
+          b.classList.toggle('text-mute', !on);
+          b.classList.toggle('text-white', on);
+          b.style.borderColor = on ? cp.color : '';
+        });
+      }
+
+      function setPinned(on) {
+        pinned = on;
+        autoBtn.className = on
+          ? 'rounded-sm border border-line px-3 py-1.5 text-mute hover:text-white'
+          : 'rounded-sm border border-tele bg-tele/10 px-3 py-1.5 text-white';
+        lt.mode.innerHTML = on
+          ? '<span class="h-1.5 w-1.5 rounded-full bg-f1red"></span>PINNED'
+          : '<span class="blink h-1.5 w-1.5 rounded-full bg-go"></span>AUTO';
+        lt.mode.className = 'flex items-center gap-1.5 ' + (on ? 'text-f1red' : 'text-go');
+      }
+
+      autoBtn.addEventListener('click', () => { setPinned(false); select(activeId, false); });
+
+      /* "Open full sector data" scrolls to the matching card and highlights it */
+      lt.jump.addEventListener('click', () => {
+        const card = document.getElementById('cp-' + activeId);
+        document.querySelectorAll('.cp-card').forEach((c) => c.classList.remove('is-focus'));
+        card.classList.add('is-focus');
+        card.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+        setTimeout(() => card.classList.remove('is-focus'), 2400);
+      });
+
+      /* ---------- 7. Flash a checkpoint when the car passes it ---------- */
+      const flash = (id) => {
+        const f = nodes[id].querySelector('.flash');
+        f.classList.remove('cp-flash');
+        void f.getBBox();            // restart the CSS animation
+        f.classList.add('cp-flash');
+      };
+
+      /* ---------- 8. Car animation: one lap every LAP_MS ---------- */
+      const LAP_MS = 16000;
+      const lapEl = document.getElementById('lapCounter');
+      trail.setAttribute('stroke-dasharray', `0 ${LEN}`);
+
+      const placeCar = (progress) => {
+        const p = pointAt(progress);
+        car.setAttribute('transform', `translate(${p.x} ${p.y})`);
+        trail.setAttribute('stroke-dasharray', `${progress * LEN} ${LEN}`);
+      };
+
+      if (reduceMotion) {
+        placeCar(CHECKPOINTS[3].frac);   // park the car at the current checkpoint
+        select(1, false);
+      } else {
+        let t0 = null;
+        let lastProgress = 0;
+        let lap = 1;
+        const frame = (now) => {
+          if (t0 === null) t0 = now;
+          const progress = ((now - t0) % LAP_MS) / LAP_MS;
+
+          // New lap when progress wraps
+          if (progress < lastProgress) {
+            lap++;
+            lapEl.textContent = 'LAP ' + String(lap).padStart(2, '0');
+          }
+          // Detect checkpoint crossings between last frame and this one
+          CHECKPOINTS.forEach((cp) => {
+            if (lastProgress < cp.frac && progress >= cp.frac) {
+              flash(cp.id);
+              if (!pinned) select(cp.id, false);
+            }
+          });
+          lastProgress = progress;
+          placeCar(progress);
+          requestAnimationFrame(frame);
+        };
+        select(1, false);
+        requestAnimationFrame(frame);
+      }
+    })();
+  </script>
+</body>
+</html>

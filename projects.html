@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scuderia Registry // Projects</title>
+  <meta name="description" content="Project registry for Brinda Ramesh Bhanderi, styled as F1 engine component spec sheets." />
+
+  <!-- ================================================================
+       FONTS: Space Grotesk + JetBrains Mono
+       ================================================================ -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- ================================================================
+       TAILWIND (CDN) + shared design tokens
+       ================================================================ -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            carbon: '#0A0C10',
+            panel:  '#1F242E',
+            line:   '#2A313D',
+            mute:   '#8B93A7',
+            f1red:  '#FF1801',
+            tele:   '#00E5FF',
+            sector: '#D500F9',
+            go:     '#00FF85'
+          },
+          fontFamily: {
+            sans: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* ---------- Base background grid ---------- */
+    body {
+      background-color: #0A0C10;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.15; } }
+    .blink { animation: blink 1.1s steps(1) infinite; }
+    @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(0,255,133,.6); } 100% { box-shadow: 0 0 0 8px rgba(0,255,133,0); } }
+    .live-dot { animation: pulse-ring 1.6s ease-out infinite; }
+
+    .kerb { background: repeating-linear-gradient(90deg, #FF1801 0 14px, #E8E8E8 14px 28px); }
+
+    /* ---------- Spec-sheet corner brackets ---------- */
+    .bracket { position: relative; }
+    .bracket::before, .bracket::after {
+      content: ''; position: absolute; width: 12px; height: 12px; pointer-events: none;
+      border-color: currentColor; opacity: .8;
+    }
+    .bracket::before { top: -1px; left: -1px; border-top: 2px solid; border-left: 2px solid; }
+    .bracket::after  { bottom: -1px; right: -1px; border-bottom: 2px solid; border-right: 2px solid; }
+
+    /* ---------- Diagonal hazard hatch for the featured card header ---------- */
+    .hatch { background: repeating-linear-gradient(-45deg, rgba(255,24,1,.18) 0 8px, transparent 8px 16px); }
+
+    /* ---------- Gauge bars: width animates from 0 to data-fill when visible ---------- */
+    .gauge > span { display: block; height: 100%; width: 0; transition: width 1.1s cubic-bezier(.2,.8,.2,1); }
+
+    /* ---------- Registry filter: hidden cards collapse ---------- */
+    .registry-card.is-hidden { display: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen font-sans text-slate-100 antialiased selection:bg-f1red selection:text-white">
+
+  <!-- ==================================================================
+       PIT WALL NAVIGATION BAR
+       ================================================================== -->
+  <header class="sticky top-0 z-50 border-b border-line bg-carbon/90 backdrop-blur">
+    <div class="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4">
+      <a href="index.html" class="flex shrink-0 items-center gap-2 font-mono text-sm font-bold tracking-widest">
+        <span class="grid h-7 w-7 place-items-center rounded-sm bg-f1red text-xs text-white">01</span>
+        <span class="hidden sm:inline">BRB<span class="text-f1red">//</span>PW</span>
+      </a>
+      <nav class="flex min-w-0 items-center gap-1 font-mono text-[11px] tracking-wider sm:text-xs" aria-label="Primary">
+        <a href="index.html" class="whitespace-nowrap rounded-sm border border-transparent px-2 py-1.5 text-mute transition hover:border-line hover:text-white">
+          <span class="hidden sm:inline">[ </span><span class="hidden lg:inline text-f1red">SYS_STATUS // </span>HOME<span class="hidden sm:inline"> ]</span>
+        </a>
+        <a href="projects.html" aria-current="page" class="whitespace-nowrap rounded-sm border border-tele/60 bg-tele/10 px-2 py-1.5 text-white">
+          <span class="hidden sm:inline">[ </span><span class="hidden lg:inline text-tele">TELEMETRY // </span>PROJECTS<span class="hidden sm:inline"> ]</span>
+        </a>
+        <a href="experience.html" class="whitespace-nowrap rounded-sm border border-transparent px-2 py-1.5 text-mute transition hover:border-line hover:text-white">
+          <span class="hidden sm:inline">[ </span><span class="hidden lg:inline text-sector">RACE_ENGINE // </span>PIPELINE<span class="hidden sm:inline"> ]</span>
+        </a>
+      </nav>
+      <div class="hidden shrink-0 items-center gap-3 font-mono text-xs text-mute md:flex">
+        <span class="flex items-center gap-1.5"><span class="live-dot h-2 w-2 rounded-full bg-go"></span>LINK OK</span>
+        <span id="utcClock" class="tabular-nums text-slate-200">--:--:--</span>
+      </div>
+    </div>
+    <div class="grid h-[3px] grid-cols-3"><span class="bg-f1red"></span><span class="bg-tele"></span><span class="bg-sector"></span></div>
+  </header>
+
+  <main class="mx-auto max-w-7xl px-4 pb-16">
+
+    <!-- ==================================================================
+         PAGE HEADER + REGISTRY FILTER
+         ================================================================== -->
+    <section class="flex flex-col gap-6 pb-8 pt-10 md:flex-row md:items-end md:justify-between lg:pt-14">
+      <div>
+        <p class="font-mono text-[11px] tracking-[0.3em] text-tele">TELEMETRY // PROJECTS</p>
+        <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-5xl">The Scuderia Registry</h1>
+        <p class="mt-4 max-w-2xl text-slate-400">
+          Every build logged as an engine component: what it does, what it runs on, and the numbers it produced.
+          Grid order follows impact. Pole goes to the system I run every race weekend.
+        </p>
+      </div>
+
+      <!-- Filter buttons: data-filter matches data-domain on each card -->
+      <div class="flex flex-wrap gap-1.5 font-mono text-[11px] tracking-wider" role="group" aria-label="Filter projects">
+        <button type="button" data-filter="all" class="filter-btn rounded-sm border border-tele bg-tele/10 px-3 py-2 text-white">ALL</button>
+        <button type="button" data-filter="forecasting" class="filter-btn rounded-sm border border-line px-3 py-2 text-mute hover:text-white">FORECASTING</button>
+        <button type="button" data-filter="deep" class="filter-btn rounded-sm border border-line px-3 py-2 text-mute hover:text-white">DEEP LEARNING</button>
+        <button type="button" data-filter="nlp" class="filter-btn rounded-sm border border-line px-3 py-2 text-mute hover:text-white">NLP</button>
+      </div>
+    </section>
+
+    <div class="kerb mb-10 h-1.5 opacity-80"></div>
+
+    <div class="space-y-8">
+
+      <!-- ==================================================================
+           P1 // POLE POSITION: F1 2026 RACE WINNER PREDICTION SYSTEM
+           Layout: [ spec sheet | telemetry metrics block (right-aligned) ]
+           ================================================================== -->
+      <article class="registry-card bracket border border-f1red/70 bg-panel/80 text-f1red shadow-[0_0_80px_-30px_rgba(255,24,1,0.6)]" data-domain="forecasting">
+        <!-- Header strip with grid slot, part number and live status -->
+        <header class="hatch flex flex-wrap items-center justify-between gap-3 border-b border-f1red/40 px-5 py-3 font-mono text-[11px] tracking-widest">
+          <div class="flex items-center gap-3">
+            <span class="rounded-sm bg-f1red px-2 py-1 font-bold text-white">P1 // POLE POSITION</span>
+            <span class="text-slate-300">PART NO. PU-01 / F1-2026-RWP</span>
+          </div>
+          <span class="flex items-center gap-2 text-go"><span class="live-dot h-2 w-2 rounded-full bg-go"></span>DEPLOYED // RACE WEEKENDS</span>
+        </header>
+
+        <div class="grid text-slate-100 lg:grid-cols-[1fr_340px]">
+          <!-- ---------- Left: spec sheet ---------- -->
+          <div class="p-5 sm:p-7">
+            <p class="font-mono text-[11px] tracking-widest text-mute">MAR 2026 // PRESENT</p>
+            <h2 class="mt-2 text-2xl font-bold sm:text-3xl">F1 2026 Race Winner Prediction System</h2>
+            <p class="mt-4 max-w-2xl leading-relaxed text-slate-300">
+              A dual-model engine that predicts each Grand Prix winner. A Monte Carlo simulator runs 100,000 races
+              across 18 weighted features, and an XGBoost model retrains as new results arrive. Every prediction
+              is committed to GitHub before lights out and never regenerated, so the track record cannot be edited after the fact.
+            </p>
+
+            <!-- Data flow diagram: pipeline stages as connected blocks -->
+            <p class="mt-7 font-mono text-[10px] tracking-widest text-mute">DATA FLOW</p>
+            <ol class="mt-3 flex flex-wrap items-stretch gap-2 font-mono text-[11px]">
+              <li class="border border-line bg-carbon/70 px-3 py-2"><span class="block text-[9px] text-mute">IN</span>Ergast API</li>
+              <li class="self-center text-mute" aria-hidden="true">&rarr;</li>
+              <li class="border border-line bg-carbon/70 px-3 py-2"><span class="block text-[9px] text-mute">ETL</span>Normalize + ID match</li>
+              <li class="self-center text-mute" aria-hidden="true">&rarr;</li>
+              <li class="border border-tele/50 bg-tele/5 px-3 py-2 text-tele"><span class="block text-[9px] text-mute">FEATURES</span>18 weighted</li>
+              <li class="self-center text-mute" aria-hidden="true">&rarr;</li>
+              <li class="border border-sector/50 bg-sector/5 px-3 py-2 text-sector"><span class="block text-[9px] text-mute">MODELS</span>Monte Carlo + XGBoost</li>
+              <li class="self-center text-mute" aria-hidden="true">&rarr;</li>
+              <li class="border border-f1red/50 bg-f1red/5 px-3 py-2 text-f1red"><span class="block text-[9px] text-mute">OUT</span>Streamlit</li>
+            </ol>
+
+            <!-- Component specification table -->
+            <dl class="mt-7 grid gap-px border border-line bg-line font-mono text-xs sm:grid-cols-2">
+              <div class="bg-panel p-3"><dt class="text-[10px] tracking-widest text-mute">SIMULATOR</dt><dd class="mt-1">Monte Carlo, softmax temp. tuned per track type</dd></div>
+              <div class="bg-panel p-3"><dt class="text-[10px] tracking-widest text-mute">LEARNER</dt><dd class="mt-1">XGBoost, re-fit each race</dd></div>
+              <div class="bg-panel p-3"><dt class="text-[10px] tracking-widest text-mute">WEIGHT UPDATE</dt><dd class="mt-1">Gradient descent with decaying learning rate</dd></div>
+              <div class="bg-panel p-3"><dt class="text-[10px] tracking-widest text-mute">VALIDATION</dt><dd class="mt-1">Leave-one-race-out backtest, 2024 and 2025</dd></div>
+            </dl>
+
+            <!-- Engineering note: the honest finding from the backtest -->
+            <div class="mt-7 border-l-2 border-sector bg-sector/5 p-4">
+              <p class="font-mono text-[10px] tracking-widest text-sector">DIAGNOSTIC NOTE</p>
+              <p class="mt-2 text-sm leading-relaxed text-slate-300">
+                The backtest over 48 races showed the model ties an "always pick pole" baseline, because most features
+                derive from qualifying pace. I publish that baseline on the dashboard beside the model, and I documented
+                the root cause and the fixes it led to in the repo.
+              </p>
+            </div>
+
+            <!-- Stack tags + links -->
+            <div class="mt-7 flex flex-wrap items-center justify-between gap-4">
+              <ul class="flex flex-wrap gap-1.5 font-mono text-[11px] text-slate-300">
+                <li class="border border-line px-2 py-1">Python</li>
+                <li class="border border-line px-2 py-1">XGBoost</li>
+                <li class="border border-line px-2 py-1">NumPy</li>
+                <li class="border border-line px-2 py-1">Pandas</li>
+                <li class="border border-line px-2 py-1">FastF1</li>
+                <li class="border border-line px-2 py-1">Streamlit</li>
+                <li class="border border-line px-2 py-1">Plotly</li>
+              </ul>
+              <div class="flex gap-2 font-mono text-xs">
+                <a href="https://f1-predictions-bb.streamlit.app/" target="_blank" rel="noopener" class="rounded-sm bg-f1red px-3 py-2 font-bold text-white hover:bg-[#ff3a26]">LIVE APP &nearr;</a>
+                <a href="https://github.com/brinda0301/F1-predictions" target="_blank" rel="noopener" class="rounded-sm border border-line px-3 py-2 text-slate-300 hover:border-slate-400 hover:text-white">SOURCE &nearr;</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- ---------- Right: telemetry metrics block ---------- -->
+          <aside class="border-t border-f1red/40 bg-black/40 p-5 font-mono text-xs lg:border-l lg:border-t-0" aria-label="Telemetry metrics">
+            <p class="flex items-center justify-between text-[10px] tracking-widest text-mute">
+              <span>TELEMETRY METRICS</span><span class="blink text-f1red">&#9679;</span>
+            </p>
+
+            <div class="mt-5">
+              <p class="text-[10px] tracking-widest text-mute">SIMULATIONS / EVENT</p>
+              <p class="mt-1 text-3xl font-bold text-white" data-count="100000">0</p>
+              <div class="gauge mt-2 h-1.5 bg-carbon"><span class="bg-f1red" data-fill="100"></span></div>
+            </div>
+
+            <div class="mt-5 grid grid-cols-2 gap-3">
+              <div class="border border-line p-3"><p class="text-[10px] tracking-widest text-mute">FEATURES</p><p class="mt-1 text-xl text-tele" data-count="18">0</p></div>
+              <div class="border border-line p-3"><p class="text-[10px] tracking-widest text-mute">MODELS</p><p class="mt-1 text-xl text-sector" data-count="2">0</p></div>
+              <div class="border border-line p-3"><p class="text-[10px] tracking-widest text-mute">BACKTEST</p><p class="mt-1 text-xl text-white"><span data-count="48">0</span> <span class="text-xs text-mute">RACES</span></p></div>
+              <div class="border border-line p-3"><p class="text-[10px] tracking-widest text-mute">TRACK TYPES</p><p class="mt-1 text-xl text-white" data-count="4">0</p></div>
+            </div>
+
+            <!-- Feature group mix: share of the 18 features by category -->
+            <p class="mt-6 text-[10px] tracking-widest text-mute">FEATURE MIX // 18</p>
+            <ul class="mt-2 space-y-2">
+              <li><div class="flex justify-between"><span>2026 regulation</span><span class="text-mute">5</span></div><div class="gauge mt-1 h-1 bg-carbon"><span class="bg-tele" data-fill="27.8"></span></div></li>
+              <li><div class="flex justify-between"><span>Car speed</span><span class="text-mute">4</span></div><div class="gauge mt-1 h-1 bg-carbon"><span class="bg-tele" data-fill="22.2"></span></div></li>
+              <li><div class="flex justify-between"><span>Driver skill</span><span class="text-mute">3</span></div><div class="gauge mt-1 h-1 bg-carbon"><span class="bg-tele" data-fill="16.7"></span></div></li>
+              <li><div class="flex justify-between"><span>Tyre and pit</span><span class="text-mute">3</span></div><div class="gauge mt-1 h-1 bg-carbon"><span class="bg-tele" data-fill="16.7"></span></div></li>
+              <li><div class="flex justify-between"><span>Race factor + history</span><span class="text-mute">3</span></div><div class="gauge mt-1 h-1 bg-carbon"><span class="bg-tele" data-fill="16.7"></span></div></li>
+            </ul>
+
+            <div class="mt-6 flex items-center justify-between border-t border-line pt-4">
+              <span class="text-[10px] tracking-widest text-mute">INTEGRITY</span>
+              <span class="text-go">PRE-RACE COMMIT</span>
+            </div>
+          </aside>
+        </div>
+      </article>
+
+      <!-- ==================================================================
+           P2 // MULTI EXPERT FUSION MODEL FOR OPEN SET RECOGNITION
+           ================================================================== -->
+      <article class="registry-card bracket border border-line bg-panel/70 text-sector transition hover:border-sector/60" data-domain="deep">
+        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3 font-mono text-[11px] tracking-widest">
+          <div class="flex items-center gap-3">
+            <span class="rounded-sm border border-sector px-2 py-1 font-bold text-sector">P2</span>
+            <span class="text-slate-300">PART NO. RX-02 / OSR-FUSION</span>
+          </div>
+          <span class="text-mute">JAN 2024 // MAY 2024 &middot; ARCHIVED</span>
+        </header>
+
+        <div class="grid text-slate-100 lg:grid-cols-[1fr_340px]">
+          <div class="p-5 sm:p-7">
+            <h2 class="text-xl font-bold sm:text-2xl">Multi Expert Fusion Model for Open Set Recognition</h2>
+            <p class="mt-3 max-w-2xl leading-relaxed text-slate-300">
+              An open set recognition system that flags inputs from classes it never saw in training. Multiple expert
+              networks fuse through attention, and diversity regularization keeps the experts from learning the same thing.
+            </p>
+            <dl class="mt-6 grid gap-px border border-line bg-line font-mono text-xs sm:grid-cols-3">
+              <div class="bg-panel p-3"><dt class="text-[10px] tracking-widest text-mute">ARCHITECTURE</dt><dd class="mt-1">Multi-expert + attention fusion</dd></div>
+              <div class="bg-panel p-3"><dt class="text-[10px] tracking-widest text-mute">REGULARIZER</dt><dd class="mt-1">Expert diversity loss</dd></div>
+              <div class="bg-panel p-3"><dt class="text-[10px] tracking-widest text-mute">COMPUTE</dt><dd class="mt-1">CUDA, GPU training</dd></div>
+            </dl>
+            <ul class="mt-6 flex flex-wrap gap-1.5 font-mono text-[11px] text-slate-300">
+              <li class="border border-line px-2 py-1">PyTorch</li>
+              <li class="border border-line px-2 py-1">CUDA</li>
+              <li class="border border-line px-2 py-1">Attention</li>
+              <li class="border border-line px-2 py-1">Deep Learning</li>
+            </ul>
+          </div>
+
+          <aside class="border-t border-line bg-black/30 p-5 font-mono text-xs lg:border-l lg:border-t-0" aria-label="Telemetry metrics">
+            <p class="text-[10px] tracking-widest text-mute">TELEMETRY METRICS</p>
+            <div class="mt-4">
+              <p class="text-[10px] tracking-widest text-mute">AUROC</p>
+              <p class="mt-1 text-3xl font-bold text-sector" data-count="0.9765" data-decimals="4">0</p>
+              <div class="gauge mt-2 h-1.5 bg-carbon"><span class="bg-sector" data-fill="97.65"></span></div>
+            </div>
+            <ul class="mt-5 space-y-3">
+              <li class="flex items-center justify-between border-b border-line pb-2"><span class="text-mute">ACCURACY GAIN</span><span class="text-go">+<span data-count="51.73" data-decimals="2">0</span>%</span></li>
+              <li class="flex items-center justify-between border-b border-line pb-2"><span class="text-mute">INFERENCE SPEED</span><span class="text-go">+<span data-count="20">0</span>%</span></li>
+              <li class="flex items-center justify-between"><span class="text-mute">ENERGY USE</span><span class="text-go">-<span data-count="30">0</span>%</span></li>
+            </ul>
+          </aside>
+        </div>
+      </article>
+
+      <!-- ==================================================================
+           P3 // BREAST CANCER DETECTION CNN
+           ================================================================== -->
+      <article class="registry-card bracket border border-line bg-panel/70 text-tele transition hover:border-tele/60" data-domain="deep">
+        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3 font-mono text-[11px] tracking-widest">
+          <div class="flex items-center gap-3">
+            <span class="rounded-sm border border-tele px-2 py-1 font-bold text-tele">P3</span>
+            <span class="text-slate-300">PART NO. CV-03 / BC-CNN</span>
+          </div>
+          <span class="text-mute">JAN 2023 // MAY 2023 &middot; ARCHIVED</span>
+        </header>
+
+        <div class="grid text-slate-100 lg:grid-cols-[1fr_340px]">
+          <div class="p-5 sm:p-7">
+            <h2 class="text-xl font-bold sm:text-2xl">Breast Cancer Detection CNN</h2>
+            <p class="mt-3 max-w-2xl leading-relaxed text-slate-300">
+              A custom convolutional network for medical image classification. Benchmarked head to head against a
+              ResNet-50 baseline on the same data, it detected cancer with 17 percentage points more accuracy.
+            </p>
+
+            <!-- Head-to-head comparison bars -->
+            <p class="mt-6 font-mono text-[10px] tracking-widest text-mute">HEAD TO HEAD // DETECTION ACCURACY</p>
+            <div class="mt-3 space-y-3 font-mono text-xs">
+              <div>
+                <div class="flex justify-between"><span class="text-tele">CUSTOM CNN</span><span>99.4%</span></div>
+                <div class="gauge mt-1 h-2.5 bg-carbon"><span class="bg-tele" data-fill="99.4"></span></div>
+              </div>
+              <div>
+                <div class="flex justify-between"><span class="text-mute">RESNET-50 BASELINE</span><span class="text-mute">82.4%</span></div>
+                <div class="gauge mt-1 h-2.5 bg-carbon"><span class="bg-slate-500" data-fill="82.4"></span></div>
+              </div>
+            </div>
+            <ul class="mt-6 flex flex-wrap gap-1.5 font-mono text-[11px] text-slate-300">
+              <li class="border border-line px-2 py-1">TensorFlow</li>
+              <li class="border border-line px-2 py-1">Keras</li>
+              <li class="border border-line px-2 py-1">CNNs</li>
+              <li class="border border-line px-2 py-1">Medical Imaging</li>
+            </ul>
+          </div>
+
+          <aside class="border-t border-line bg-black/30 p-5 font-mono text-xs lg:border-l lg:border-t-0" aria-label="Telemetry metrics">
+            <p class="text-[10px] tracking-widest text-mute">TELEMETRY METRICS</p>
+            <div class="mt-4">
+              <p class="text-[10px] tracking-widest text-mute">DETECTION ACCURACY</p>
+              <p class="mt-1 text-3xl font-bold text-tele"><span data-count="99.4" data-decimals="1">0</span>%</p>
+            </div>
+            <ul class="mt-5 space-y-3">
+              <li class="flex items-center justify-between border-b border-line pb-2"><span class="text-mute">BASELINE</span><span>ResNet-50 // 82.4%</span></li>
+              <li class="flex items-center justify-between border-b border-line pb-2"><span class="text-mute">MARGIN</span><span class="text-sector">+<span data-count="17">0</span> PTS</span></li>
+              <li class="flex items-center justify-between"><span class="text-mute">MODEL</span><span>Custom arch.</span></li>
+            </ul>
+          </aside>
+        </div>
+      </article>
+
+      <!-- ==================================================================
+           P4 // SENTIMENT ANALYSIS FOR DEPRESSION DETECTION
+           ================================================================== -->
+      <article class="registry-card bracket border border-line bg-panel/70 text-go transition hover:border-go/60" data-domain="nlp">
+        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3 font-mono text-[11px] tracking-widest">
+          <div class="flex items-center gap-3">
+            <span class="rounded-sm border border-go px-2 py-1 font-bold text-go">P4</span>
+            <span class="text-slate-300">PART NO. NL-04 / SENT-DEP</span>
+          </div>
+          <span class="text-mute">JAN 2021 // MAR 2021 &middot; ARCHIVED</span>
+        </header>
+
+        <div class="grid text-slate-100 lg:grid-cols-[1fr_340px]">
+          <div class="p-5 sm:p-7">
+            <h2 class="text-xl font-bold sm:text-2xl">Sentiment Analysis for Depression Detection</h2>
+            <p class="mt-3 max-w-2xl leading-relaxed text-slate-300">
+              A text classification study on about 16,000 tweets. I compared three classical models on the same
+              pipeline to find signals of depression in language, and reached 99.89% classification accuracy.
+            </p>
+
+            <!-- Model roster: the three classifiers compared -->
+            <p class="mt-6 font-mono text-[10px] tracking-widest text-mute">MODEL ROSTER</p>
+            <ol class="mt-3 grid gap-2 font-mono text-xs sm:grid-cols-3">
+              <li class="border border-line bg-carbon/60 p-3"><span class="text-mute">M1</span> Naive Bayes</li>
+              <li class="border border-line bg-carbon/60 p-3"><span class="text-mute">M2</span> Random Forest</li>
+              <li class="border border-line bg-carbon/60 p-3"><span class="text-mute">M3</span> Logistic Regression</li>
+            </ol>
+            <ul class="mt-6 flex flex-wrap gap-1.5 font-mono text-[11px] text-slate-300">
+              <li class="border border-line px-2 py-1">Python</li>
+              <li class="border border-line px-2 py-1">Scikit-learn</li>
+              <li class="border border-line px-2 py-1">NLP</li>
+              <li class="border border-line px-2 py-1">Pandas</li>
+            </ul>
+          </div>
+
+          <aside class="border-t border-line bg-black/30 p-5 font-mono text-xs lg:border-l lg:border-t-0" aria-label="Telemetry metrics">
+            <p class="text-[10px] tracking-widest text-mute">TELEMETRY METRICS</p>
+            <div class="mt-4">
+              <p class="text-[10px] tracking-widest text-mute">CLASSIFICATION ACCURACY</p>
+              <p class="mt-1 text-3xl font-bold text-go"><span data-count="99.89" data-decimals="2">0</span>%</p>
+              <div class="gauge mt-2 h-1.5 bg-carbon"><span class="bg-go" data-fill="99.89"></span></div>
+            </div>
+            <ul class="mt-5 space-y-3">
+              <li class="flex items-center justify-between border-b border-line pb-2"><span class="text-mute">DATA SCALE</span><span>~<span data-count="16000">0</span> TWEETS</span></li>
+              <li class="flex items-center justify-between border-b border-line pb-2"><span class="text-mute">MODELS COMPARED</span><span data-count="3">0</span></li>
+              <li class="flex items-center justify-between"><span class="text-mute">TASK</span><span>Binary sentiment</span></li>
+            </ul>
+          </aside>
+        </div>
+      </article>
+
+      <!-- Empty state when a filter hides every card -->
+      <p id="emptyState" class="hidden border border-dashed border-line p-8 text-center font-mono text-xs text-mute">NO COMPONENTS MATCH THIS FILTER</p>
+    </div>
+  </main>
+
+  <!-- ==================================================================
+       FOOTER
+       ================================================================== -->
+  <footer class="border-t border-line bg-black/40">
+    <div class="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 md:flex-row md:items-center md:justify-between">
+      <div>
+        <p class="font-mono text-[11px] tracking-[0.3em] text-f1red">TEAM RADIO // BOX BOX</p>
+        <p class="mt-2 text-lg font-semibold">Open a channel. I reply within a day.</p>
+      </div>
+      <ul class="flex flex-wrap gap-2 font-mono text-xs">
+        <li><a class="block border border-line px-3 py-2 text-slate-300 transition hover:border-f1red hover:text-white" href="mailto:bhanderibrinda3@gmail.com">EMAIL</a></li>
+        <li><a class="block border border-line px-3 py-2 text-slate-300 transition hover:border-tele hover:text-white" href="https://www.linkedin.com/in/brindabhanderi" target="_blank" rel="noopener">LINKEDIN &nearr;</a></li>
+        <li><a class="block border border-line px-3 py-2 text-slate-300 transition hover:border-sector hover:text-white" href="https://github.com/brinda0301" target="_blank" rel="noopener">GITHUB &nearr;</a></li>
+      </ul>
+    </div>
+    <p class="border-t border-line py-4 text-center font-mono text-[10px] tracking-widest text-mute">&copy; <span id="year">2026</span> BRINDA RAMESH BHANDERI // HTML + TAILWIND + VANILLA JS</p>
+  </footer>
+
+  <!-- ==================================================================
+       SCRIPTS
+       ================================================================== -->
+  <script>
+    (() => {
+      'use strict';
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      /* ---------- 1. UTC clock + footer year ---------- */
+      const clockEl = document.getElementById('utcClock');
+      const tickClock = () => { clockEl.textContent = 'UTC ' + new Date().toISOString().slice(11, 19); };
+      tickClock();
+      setInterval(tickClock, 1000);
+      document.getElementById('year').textContent = new Date().getFullYear();
+
+      /* ---------- 2. Count-up numbers (data-count, optional data-decimals) ---------- */
+      const formatNum = (value, decimals) =>
+        value.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+
+      const countUp = (el) => {
+        const target = parseFloat(el.dataset.count);
+        const decimals = parseInt(el.dataset.decimals || '0', 10);
+        if (reduceMotion) { el.textContent = formatNum(target, decimals); return; }
+        const t0 = performance.now();
+        const DURATION = 1200;
+        const step = (now) => {
+          const p = Math.min((now - t0) / DURATION, 1);
+          const eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = formatNum(target * eased, decimals);
+          if (p < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      };
+
+      /* ---------- 3. Gauges fill to data-fill percent ---------- */
+      const fillGauge = (span) => { span.style.width = span.dataset.fill + '%'; };
+
+      /* ---------- 4. Trigger both when a card scrolls into view ---------- */
+      const activate = (card) => {
+        if (card.dataset.live) return;   // run each card's animation once
+        card.dataset.live = '1';
+        card.querySelectorAll('[data-count]').forEach(countUp);
+        card.querySelectorAll('[data-fill]').forEach(fillGauge);
+      };
+      const cards = document.querySelectorAll('.registry-card');
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) { activate(entry.target); io.unobserve(entry.target); }
+          });
+        }, { threshold: 0.2 });
+        cards.forEach((c) => io.observe(c));
+      } else {
+        cards.forEach(activate);
+      }
+
+      /* ---------- 5. Registry filter ---------- */
+      const buttons = document.querySelectorAll('.filter-btn');
+      const emptyState = document.getElementById('emptyState');
+      buttons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const f = btn.dataset.filter;
+          // Toggle active styles
+          buttons.forEach((b) => {
+            const on = b === btn;
+            b.classList.toggle('border-tele', on);
+            b.classList.toggle('bg-tele/10', on);
+            b.classList.toggle('text-white', on);
+            b.classList.toggle('border-line', !on);
+            b.classList.toggle('text-mute', !on);
+            b.setAttribute('aria-pressed', String(on));
+          });
+          // Show matching cards, and run their animations if not yet seen
+          let shown = 0;
+          cards.forEach((card) => {
+            const match = f === 'all' || card.dataset.domain === f;
+            card.classList.toggle('is-hidden', !match);
+            if (match) { shown++; activate(card); }
+          });
+          emptyState.classList.toggle('hidden', shown > 0);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

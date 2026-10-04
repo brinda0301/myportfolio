@@ -159,8 +159,9 @@
             <p class="font-mono text-[11px] tracking-widest text-mute">MAR 2026 // PRESENT</p>
             <h2 class="mt-2 text-2xl font-bold sm:text-3xl">F1 2026 Race Winner Prediction System</h2>
             <p class="mt-4 max-w-2xl leading-relaxed text-slate-300">
-              A dual-model engine that predicts each Grand Prix winner. A Monte Carlo simulator runs 100,000 races
-              across 18 weighted features, and an XGBoost model retrains as new results arrive. Every prediction
+              A three-model engine that predicts each Grand Prix winner. A Monte Carlo simulator runs 100,000 races
+              across 18 weighted features, an XGBoost model retrains as new results arrive, and from R17 a conditional
+              logit model scores grid slot and gap to pole against circuit overtaking difficulty. Every prediction
               is committed to GitHub before lights out and never regenerated, so the track record cannot be edited after the fact.
             </p>
 
@@ -173,7 +174,7 @@
               <li class="self-center text-mute" aria-hidden="true">&rarr;</li>
               <li class="border border-tele/50 bg-tele/5 px-3 py-2 text-tele"><span class="block text-[9px] text-mute">FEATURES</span>18 weighted</li>
               <li class="self-center text-mute" aria-hidden="true">&rarr;</li>
-              <li class="border border-sector/50 bg-sector/5 px-3 py-2 text-sector"><span class="block text-[9px] text-mute">MODELS</span>Monte Carlo + XGBoost</li>
+              <li class="border border-sector/50 bg-sector/5 px-3 py-2 text-sector"><span class="block text-[9px] text-mute">MODELS</span>Monte Carlo + XGBoost + Logit</li>
               <li class="self-center text-mute" aria-hidden="true">&rarr;</li>
               <li class="border border-f1red/50 bg-f1red/5 px-3 py-2 text-f1red"><span class="block text-[9px] text-mute">OUT</span>Streamlit</li>
             </ol>
@@ -206,6 +207,7 @@
                 <li class="border border-line px-2 py-1">FastF1</li>
                 <li class="border border-line px-2 py-1">Streamlit</li>
                 <li class="border border-line px-2 py-1">Plotly</li>
+                <li class="border border-line px-2 py-1">Log loss / Brier</li>
               </ul>
               <div class="flex gap-2 font-mono text-xs">
                 <a href="https://f1-predictions-bb.streamlit.app/" target="_blank" rel="noopener" class="rounded-sm bg-f1red px-3 py-2 font-bold text-white hover:bg-[#ff3a26]">LIVE APP &nearr;</a>
@@ -228,7 +230,7 @@
 
             <div class="mt-5 grid grid-cols-2 gap-3">
               <div class="border border-line p-3"><p class="text-[10px] tracking-widest text-mute">FEATURES</p><p class="mt-1 text-xl text-tele" data-count="18">0</p></div>
-              <div class="border border-line p-3"><p class="text-[10px] tracking-widest text-mute">MODELS</p><p class="mt-1 text-xl text-sector" data-count="2">0</p></div>
+              <div class="border border-line p-3"><p class="text-[10px] tracking-widest text-mute">MODELS</p><p class="mt-1 text-xl text-sector" data-count="3">0</p></div>
               <div class="border border-line p-3"><p class="text-[10px] tracking-widest text-mute">BACKTEST</p><p class="mt-1 text-xl text-white"><span data-count="48">0</span> <span class="text-xs text-mute">RACES</span></p></div>
               <div class="border border-line p-3"><p class="text-[10px] tracking-widest text-mute">TRACK TYPES</p><p class="mt-1 text-xl text-white" data-count="4">0</p></div>
             </div>
@@ -249,6 +251,59 @@
             </div>
           </aside>
         </div>
+
+        <!-- ---------- Live season feed ----------
+             Filled by f1-live.js from the F1-predictions repo on GitHub.
+             The values below are a snapshot shown until the fetch returns. -->
+        <section class="border-t border-f1red/40 bg-black/50 p-5 font-mono text-xs text-slate-100 sm:p-7" aria-label="Live season feed">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="flex items-center gap-2 text-[11px] tracking-widest text-f1red"><span class="blink h-2 w-2 rounded-full bg-f1red"></span>LIVE SEASON FEED // 2026</p>
+            <p class="text-[10px] tracking-widest text-mute" data-f1="status">SNAPSHOT AFTER R16</p>
+          </div>
+
+          <!-- Season record vs the baseline -->
+          <div class="mt-5 grid grid-cols-2 gap-px border border-line bg-line lg:grid-cols-4">
+            <div class="bg-panel p-4">
+              <p class="text-[10px] tracking-widest text-mute">MONTE CARLO</p>
+              <p class="mt-1 text-2xl font-bold text-go" data-f1="mc-record">9/16</p>
+              <p class="text-mute"><span data-f1="mc-pct">56%</span> winners</p>
+            </div>
+            <div class="bg-panel p-4">
+              <p class="text-[10px] tracking-widest text-mute">XGBOOST</p>
+              <p class="mt-1 text-2xl font-bold text-tele" data-f1="xgb-record">5/13</p>
+              <p class="text-mute"><span data-f1="xgb-pct">38%</span> since debut</p>
+            </div>
+            <div class="bg-panel p-4">
+              <p class="text-[10px] tracking-widest text-mute">ALWAYS-POLE BASELINE</p>
+              <p class="mt-1 text-2xl font-bold text-sector" data-f1="pole-record">11/16</p>
+              <p class="text-mute"><span data-f1="pole-pct">69%</span> winners</p>
+            </div>
+            <div class="bg-panel p-4">
+              <p class="text-[10px] tracking-widest text-mute">MEAN LOG LOSS</p>
+              <p class="mt-1 text-2xl font-bold text-white"><span data-f1="mc-logloss">1.490</span></p>
+              <p class="text-mute">vs pole <span data-f1="pole-logloss">1.086</span> &middot; lower wins</p>
+            </div>
+          </div>
+
+          <!-- Last scored race and the next locked call -->
+          <div class="mt-4 grid gap-4 md:grid-cols-2">
+            <div class="border border-line p-4">
+              <p class="text-[10px] tracking-widest text-mute">LAST RACE &middot; <span data-f1="last-round">R16 // MALAYSIA</span></p>
+              <p class="mt-2">Pick: <span class="text-white" data-f1="last-pick">Max Verstappen (40.97%)</span></p>
+              <p class="mt-1">Winner: <span class="text-white" data-f1="last-winner">Max Verstappen</span>
+                <span class="ml-2 font-bold text-go" data-f1="last-verdict">CORRECT</span></p>
+            </div>
+            <div class="border border-tele/40 bg-tele/5 p-4">
+              <p class="text-[10px] tracking-widest text-mute">NEXT RACE &middot; <span data-f1="next-round">AFTER R16</span></p>
+              <p class="mt-2">Pick: <span class="text-white" data-f1="next-pick">Awaiting next weekend</span></p>
+              <p class="mt-1 text-tele" data-f1="next-status">STANDBY</p>
+            </div>
+          </div>
+
+          <!-- One square per round: green = Monte Carlo called the winner -->
+          <p class="mt-5 text-[10px] tracking-widest text-mute">RACE LOG // MONTE CARLO WINNER CALLS</p>
+          <div class="mt-2 grid grid-cols-8 gap-1 sm:grid-cols-12 lg:grid-cols-[repeat(24,minmax(0,1fr))]" data-f1-racelog></div>
+        </section>
       </article>
 
       <!-- ==================================================================
@@ -512,5 +567,7 @@
       });
     })();
   </script>
+  <!-- Live data from the F1-predictions repo -->
+  <script src="f1-live.js"></script>
 </body>
 </html>

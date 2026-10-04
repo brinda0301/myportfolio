@@ -229,6 +229,15 @@
             <dt class="text-mute">OPTIMIZATION STATUS</dt>
             <dd class="flex items-center gap-2 text-go"><span class="blink-slow h-2 w-2 rounded-full bg-go"></span>GREEN</dd>
           </div>
+          <!-- Live rows: filled by f1-live.js from the F1-predictions repo -->
+          <div class="flex items-center justify-between gap-3 px-4 py-2.5">
+            <dt class="text-mute">SEASON RECORD // MC</dt>
+            <dd class="text-white"><span data-f1="mc-record">9/16</span> <span class="text-mute">vs pole <span data-f1="pole-record">11/16</span></span></dd>
+          </div>
+          <div class="flex items-center justify-between gap-3 px-4 py-2.5">
+            <dt class="shrink-0 text-mute">LAST CALL</dt>
+            <dd class="truncate text-right"><span data-f1="last-round">R16 // MALAYSIA</span> <span class="font-bold text-go" data-f1="last-verdict">CORRECT</span></dd>
+          </div>
           <div class="flex items-center justify-between gap-3 px-4 py-2.5">
             <dt class="text-mute">ENGINEERED FEATURES</dt>
             <dd class="text-white">18</dd>
@@ -543,6 +552,12 @@
       if (!reduceMotion) setInterval(pushFeed, 2600);
       runMonteCarlo();
 
+      // When f1-live.js finishes syncing, report the latest race in the log
+      document.addEventListener('f1live', (e) => {
+        const { last } = e.detail;
+        log('GITHUB', `synced R${last.round} ${last.race}: ${last.correct ? 'winner called' : 'winner missed'}`, last.correct ? 'text-go' : 'text-f1red');
+      });
+
       /* ---------- 6. Speed trace canvas: scrolling synthetic lap data ---------- */
       const canvas = document.getElementById('traceCanvas');
       const ctx = canvas.getContext('2d');
@@ -608,5 +623,7 @@
       reduceMotion ? draw() : requestAnimationFrame(loop);
     })();
   </script>
+  <!-- Live data from the F1-predictions repo -->
+  <script src="f1-live.js"></script>
 </body>
 </html>

@@ -159,9 +159,9 @@
             <p class="font-mono text-[11px] tracking-widest text-mute">MAR 2026 // PRESENT</p>
             <h2 class="mt-2 text-2xl font-bold sm:text-3xl">F1 2026 Race Winner Prediction System</h2>
             <p class="mt-4 max-w-2xl leading-relaxed text-slate-300">
-              A three-model engine that predicts each Grand Prix winner. A Monte Carlo simulator runs 100,000 races
-              across 18 weighted features, an XGBoost model retrains as new results arrive, and from R17 a conditional
-              logit model scores grid slot and gap to pole against circuit overtaking difficulty. Every prediction
+              Two models predict each Grand Prix winner, head to head. A Monte Carlo simulator runs 100,000 races
+              across 18 weighted features. An XGBoost win classifier, rebuilt at R17, trains on 2,236 driver rows from
+              2022 to 2026 with monotone constraints on six timing inputs. Every prediction
               is committed to GitHub before lights out and never regenerated, so the track record cannot be edited after the fact.
             </p>
 
@@ -174,7 +174,7 @@
               <li class="self-center text-mute" aria-hidden="true">&rarr;</li>
               <li class="border border-tele/50 bg-tele/5 px-3 py-2 text-tele"><span class="block text-[9px] text-mute">FEATURES</span>18 weighted</li>
               <li class="self-center text-mute" aria-hidden="true">&rarr;</li>
-              <li class="border border-sector/50 bg-sector/5 px-3 py-2 text-sector"><span class="block text-[9px] text-mute">MODELS</span>Monte Carlo + XGBoost + Logit</li>
+              <li class="border border-sector/50 bg-sector/5 px-3 py-2 text-sector"><span class="block text-[9px] text-mute">MODELS</span>Monte Carlo + XGBoost</li>
               <li class="self-center text-mute" aria-hidden="true">&rarr;</li>
               <li class="border border-f1red/50 bg-f1red/5 px-3 py-2 text-f1red"><span class="block text-[9px] text-mute">OUT</span>Streamlit</li>
             </ol>
@@ -182,9 +182,9 @@
             <!-- Component specification table -->
             <dl class="mt-7 grid gap-px border border-line bg-line font-mono text-xs sm:grid-cols-2">
               <div class="bg-panel p-3"><dt class="text-[10px] tracking-widest text-mute">SIMULATOR</dt><dd class="mt-1">Monte Carlo, softmax temp. tuned per track type</dd></div>
-              <div class="bg-panel p-3"><dt class="text-[10px] tracking-widest text-mute">LEARNER</dt><dd class="mt-1">XGBoost, re-fit each race</dd></div>
+              <div class="bg-panel p-3"><dt class="text-[10px] tracking-widest text-mute">LEARNER</dt><dd class="mt-1">XGBoost win classifier, monotone, re-fit each race</dd></div>
               <div class="bg-panel p-3"><dt class="text-[10px] tracking-widest text-mute">WEIGHT UPDATE</dt><dd class="mt-1">Gradient descent with decaying learning rate</dd></div>
-              <div class="bg-panel p-3"><dt class="text-[10px] tracking-widest text-mute">VALIDATION</dt><dd class="mt-1">Leave-one-race-out backtest, 2024 and 2025</dd></div>
+              <div class="bg-panel p-3"><dt class="text-[10px] tracking-widest text-mute">VALIDATION</dt><dd class="mt-1">Walk-forward backtest, 65 races from 2024 to 2026</dd></div>
             </dl>
 
             <!-- Engineering note: the honest finding from the backtest -->
@@ -193,7 +193,9 @@
               <p class="mt-2 text-sm leading-relaxed text-slate-300">
                 The backtest over 48 races showed the model ties an "always pick pole" baseline, because most features
                 derive from qualifying pace. I publish that baseline on the dashboard beside the model, and I documented
-                the root cause and the fixes it led to in the repo.
+                the root cause and the fixes it led to in the repo. After the R17 rebuild, both models beat the
+                baseline on log loss in each of the first three live races. Both are frozen from R19, so the last six
+                races are a clean out-of-sample test.
               </p>
             </div>
 
@@ -230,8 +232,8 @@
 
             <div class="mt-5 grid grid-cols-2 gap-3">
               <div class="border border-line p-3"><p class="text-[10px] tracking-widest text-mute">FEATURES</p><p class="mt-1 text-xl text-tele" data-count="18">0</p></div>
-              <div class="border border-line p-3"><p class="text-[10px] tracking-widest text-mute">MODELS</p><p class="mt-1 text-xl text-sector" data-count="3">0</p></div>
-              <div class="border border-line p-3"><p class="text-[10px] tracking-widest text-mute">BACKTEST</p><p class="mt-1 text-xl text-white"><span data-count="48">0</span> <span class="text-xs text-mute">RACES</span></p></div>
+              <div class="border border-line p-3"><p class="text-[10px] tracking-widest text-mute">MODELS</p><p class="mt-1 text-xl text-sector" data-count="2">0</p></div>
+              <div class="border border-line p-3"><p class="text-[10px] tracking-widest text-mute">BACKTEST</p><p class="mt-1 text-xl text-white"><span data-count="65">0</span> <span class="text-xs text-mute">RACES</span></p></div>
               <div class="border border-line p-3"><p class="text-[10px] tracking-widest text-mute">TRACK TYPES</p><p class="mt-1 text-xl text-white" data-count="4">0</p></div>
             </div>
 
@@ -258,45 +260,45 @@
         <section class="border-t border-f1red/40 bg-black/50 p-5 font-mono text-xs text-slate-100 sm:p-7" aria-label="Live season feed">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <p class="flex items-center gap-2 text-[11px] tracking-widest text-f1red"><span class="blink h-2 w-2 rounded-full bg-f1red"></span>LIVE SEASON FEED // 2026</p>
-            <p class="text-[10px] tracking-widest text-mute" data-f1="status">SNAPSHOT AFTER R16</p>
+            <p class="text-[10px] tracking-widest text-mute" data-f1="status">SNAPSHOT AFTER R19</p>
           </div>
 
           <!-- Season record vs the baseline -->
           <div class="mt-5 grid grid-cols-2 gap-px border border-line bg-line lg:grid-cols-4">
             <div class="bg-panel p-4">
               <p class="text-[10px] tracking-widest text-mute">MONTE CARLO</p>
-              <p class="mt-1 text-2xl font-bold text-go" data-f1="mc-record">9/16</p>
-              <p class="text-mute"><span data-f1="mc-pct">56%</span> winners</p>
+              <p class="mt-1 text-2xl font-bold text-go" data-f1="mc-record">11/19</p>
+              <p class="text-mute"><span data-f1="mc-pct">58%</span> winners</p>
             </div>
             <div class="bg-panel p-4">
               <p class="text-[10px] tracking-widest text-mute">XGBOOST</p>
-              <p class="mt-1 text-2xl font-bold text-tele" data-f1="xgb-record">5/13</p>
-              <p class="text-mute"><span data-f1="xgb-pct">38%</span> since debut</p>
+              <p class="mt-1 text-2xl font-bold text-tele" data-f1="xgb-record">7/16</p>
+              <p class="text-mute"><span data-f1="xgb-pct">44%</span> since debut</p>
             </div>
             <div class="bg-panel p-4">
               <p class="text-[10px] tracking-widest text-mute">ALWAYS-POLE BASELINE</p>
-              <p class="mt-1 text-2xl font-bold text-sector" data-f1="pole-record">11/16</p>
-              <p class="text-mute"><span data-f1="pole-pct">69%</span> winners</p>
+              <p class="mt-1 text-2xl font-bold text-sector" data-f1="pole-record">13/19</p>
+              <p class="text-mute"><span data-f1="pole-pct">68%</span> winners</p>
             </div>
             <div class="bg-panel p-4">
               <p class="text-[10px] tracking-widest text-mute">MEAN LOG LOSS</p>
-              <p class="mt-1 text-2xl font-bold text-white"><span data-f1="mc-logloss">1.490</span></p>
-              <p class="text-mute">vs pole <span data-f1="pole-logloss">1.086</span> &middot; lower wins</p>
+              <p class="mt-1 text-2xl font-bold text-white"><span data-f1="mc-logloss">1.468</span></p>
+              <p class="text-mute">vs pole <span data-f1="pole-logloss">1.225</span> &middot; lower wins</p>
             </div>
           </div>
 
           <!-- Last scored race and the next locked call -->
           <div class="mt-4 grid gap-4 md:grid-cols-2">
             <div class="border border-line p-4">
-              <p class="text-[10px] tracking-widest text-mute">LAST RACE &middot; <span data-f1="last-round">R16 // MALAYSIA</span></p>
-              <p class="mt-2">Pick: <span class="text-white" data-f1="last-pick">Max Verstappen (40.97%)</span></p>
+              <p class="text-[10px] tracking-widest text-mute">LAST RACE &middot; <span data-f1="last-round">R19 // MEXICO</span></p>
+              <p class="mt-2">Pick: <span class="text-white" data-f1="last-pick">Lewis Hamilton (40.52%)</span></p>
               <p class="mt-1">Winner: <span class="text-white" data-f1="last-winner">Max Verstappen</span>
-                <span class="ml-2 font-bold text-go" data-f1="last-verdict">CORRECT</span></p>
+                <span class="ml-2 font-bold text-f1red" data-f1="last-verdict">MISS</span></p>
             </div>
             <div class="border border-tele/40 bg-tele/5 p-4">
-              <p class="text-[10px] tracking-widest text-mute">NEXT RACE &middot; <span data-f1="next-round">AFTER R16</span></p>
-              <p class="mt-2">Pick: <span class="text-white" data-f1="next-pick">Awaiting next weekend</span></p>
-              <p class="mt-1 text-tele" data-f1="next-status">STANDBY</p>
+              <p class="text-[10px] tracking-widest text-mute">NEXT RACE &middot; <span data-f1="next-round">R20 // BRAZILIAN GRAND PRIX</span></p>
+              <p class="mt-2">Pick: <span class="text-white" data-f1="next-pick">Lando Norris (60.56%)</span></p>
+              <p class="mt-1 text-tele" data-f1="next-status">LOCKED PRE-RACE</p>
             </div>
           </div>
 

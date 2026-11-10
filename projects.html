@@ -194,7 +194,7 @@
                 The backtest over 48 races showed the model ties an "always pick pole" baseline, because most features
                 derive from qualifying pace. I publish that baseline on the dashboard beside the model, and I documented
                 the root cause and the fixes it led to in the repo. After the R17 rebuild, both models beat the
-                baseline on log loss in each of the first three live races. Both are frozen from R19, so the last six
+                baseline on log loss in each of the first four live races. Both are frozen from R19, so the last six
                 races are a clean out-of-sample test.
               </p>
             </div>
@@ -260,45 +260,45 @@
         <section class="border-t border-f1red/40 bg-black/50 p-5 font-mono text-xs text-slate-100 sm:p-7" aria-label="Live season feed">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <p class="flex items-center gap-2 text-[11px] tracking-widest text-f1red"><span class="blink h-2 w-2 rounded-full bg-f1red"></span>LIVE SEASON FEED // 2026</p>
-            <p class="text-[10px] tracking-widest text-mute" data-f1="status">SNAPSHOT AFTER R19</p>
+            <p class="text-[10px] tracking-widest text-mute" data-f1="status">SNAPSHOT AFTER R20</p>
           </div>
 
           <!-- Season record vs the baseline -->
           <div class="mt-5 grid grid-cols-2 gap-px border border-line bg-line lg:grid-cols-4">
             <div class="bg-panel p-4">
               <p class="text-[10px] tracking-widest text-mute">MONTE CARLO</p>
-              <p class="mt-1 text-2xl font-bold text-go" data-f1="mc-record">11/19</p>
-              <p class="text-mute"><span data-f1="mc-pct">58%</span> winners</p>
+              <p class="mt-1 text-2xl font-bold text-go" data-f1="mc-record">12/20</p>
+              <p class="text-mute"><span data-f1="mc-pct">60%</span> winners</p>
             </div>
             <div class="bg-panel p-4">
               <p class="text-[10px] tracking-widest text-mute">XGBOOST</p>
-              <p class="mt-1 text-2xl font-bold text-tele" data-f1="xgb-record">7/16</p>
-              <p class="text-mute"><span data-f1="xgb-pct">44%</span> since debut</p>
+              <p class="mt-1 text-2xl font-bold text-tele" data-f1="xgb-record">8/17</p>
+              <p class="text-mute"><span data-f1="xgb-pct">47%</span> since debut</p>
             </div>
             <div class="bg-panel p-4">
               <p class="text-[10px] tracking-widest text-mute">ALWAYS-POLE BASELINE</p>
-              <p class="mt-1 text-2xl font-bold text-sector" data-f1="pole-record">13/19</p>
-              <p class="text-mute"><span data-f1="pole-pct">68%</span> winners</p>
+              <p class="mt-1 text-2xl font-bold text-sector" data-f1="pole-record">14/20</p>
+              <p class="text-mute"><span data-f1="pole-pct">70%</span> winners</p>
             </div>
             <div class="bg-panel p-4">
               <p class="text-[10px] tracking-widest text-mute">MEAN LOG LOSS</p>
-              <p class="mt-1 text-2xl font-bold text-white"><span data-f1="mc-logloss">1.468</span></p>
-              <p class="text-mute">vs pole <span data-f1="pole-logloss">1.225</span> &middot; lower wins</p>
+              <p class="mt-1 text-2xl font-bold text-white"><span data-f1="mc-logloss">1.420</span></p>
+              <p class="text-mute">vs pole <span data-f1="pole-logloss">1.198</span> &middot; lower wins</p>
             </div>
           </div>
 
           <!-- Last scored race and the next locked call -->
           <div class="mt-4 grid gap-4 md:grid-cols-2">
             <div class="border border-line p-4">
-              <p class="text-[10px] tracking-widest text-mute">LAST RACE &middot; <span data-f1="last-round">R19 // MEXICO</span></p>
-              <p class="mt-2">Pick: <span class="text-white" data-f1="last-pick">Lewis Hamilton (40.52%)</span></p>
-              <p class="mt-1">Winner: <span class="text-white" data-f1="last-winner">Max Verstappen</span>
-                <span class="ml-2 font-bold text-f1red" data-f1="last-verdict">MISS</span></p>
+              <p class="text-[10px] tracking-widest text-mute">LAST RACE &middot; <span data-f1="last-round">R20 // BRAZIL</span></p>
+              <p class="mt-2">Pick: <span class="text-white" data-f1="last-pick">Lando Norris (60.56%)</span></p>
+              <p class="mt-1">Winner: <span class="text-white" data-f1="last-winner">Lando Norris</span>
+                <span class="ml-2 font-bold text-go" data-f1="last-verdict">CORRECT</span></p>
             </div>
             <div class="border border-tele/40 bg-tele/5 p-4">
-              <p class="text-[10px] tracking-widest text-mute">NEXT RACE &middot; <span data-f1="next-round">R20 // BRAZILIAN GRAND PRIX</span></p>
-              <p class="mt-2">Pick: <span class="text-white" data-f1="next-pick">Lando Norris (60.56%)</span></p>
-              <p class="mt-1 text-tele" data-f1="next-status">LOCKED PRE-RACE</p>
+              <p class="text-[10px] tracking-widest text-mute">NEXT RACE &middot; <span data-f1="next-round">AFTER R20</span></p>
+              <p class="mt-2">Pick: <span class="text-white" data-f1="next-pick">Awaiting next weekend</span></p>
+              <p class="mt-1 text-tele" data-f1="next-status">STANDBY</p>
             </div>
           </div>
 
